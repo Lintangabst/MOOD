@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    domains: ["google.com"], // atau domain lain sesuai output Gemini
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

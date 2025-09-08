@@ -86,6 +86,12 @@ export default function Navbar() {
             >
               Home
             </Link>
+           <Link
+              href="/dashboard"
+              className={`hover:text-green-600 ${pathname === "/dashboard" ? "text-green-600" : "text-gray-700"}`}
+            >
+              Dashboard
+            </Link>
             <Link
               href="/materials"
               className={`hover:text-green-600 ${pathname === "/materials" ? "text-green-600" : "text-gray-700"}`}
@@ -184,6 +190,13 @@ export default function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               Home
+            </Link>
+            <Link
+              href="/dashboard"
+              className={`hover:text-green-600 ${pathname === "/" ? "text-green-600" : "text-gray-700"}`}
+              onClick={() => setIsOpen(false)}
+            >
+              Dashboard
             </Link>
             <Link
               href="/materials"

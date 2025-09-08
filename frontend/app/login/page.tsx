@@ -15,7 +15,7 @@ import Cookies from "js-cookie";
 
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6)
+  password: z.string().min(6),
 });
 
 type LoginInput = z.infer<typeof loginSchema>;
@@ -26,9 +26,9 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
   } = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema)
+    resolver: zodResolver(loginSchema),
   });
 
   const router = useRouter();
@@ -36,25 +36,30 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginInput) => {
     try {
       const res = await axios.post("http://localhost:5000/api/auth/login", data);
-  
+
       const { token, user } = res.data;
-  
+
       Cookies.set("token", token, { path: "/", expires: 1 }); // 1 hari
-      Cookies.set("role", user.role, { path: "/" });      
-  
+      Cookies.set("role", user.role, { path: "/" });
+
       toast.success("Login berhasil!");
-  
+
       // ✅ Redirect berdasarkan role
       if (user.role === "admin") {
         router.push("/admin");
       } else {
         router.push("/");
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.msg || "Login gagal");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        // kalau server balikin msg
+        toast.error(err.response?.data?.msg || "Login gagal");
+      } else {
+        // kalau error lain (bukan dari axios)
+        toast.error("Login gagal: Unexpected error");
+      }
     }
   };
-  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-white to-blue-100 px-4">
@@ -70,14 +75,13 @@ export default function LoginPage() {
 
         <div className="p-8 flex flex-col justify-center">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="text-center">
-                <h1 className="text-3xl font-bold text-black">Welcome Back</h1>
-                <h2 className="text-xl font-semibold text-gray-700">Sign in</h2>
-                <p className="text-gray-500 text-sm mt-1">
-                    Just sign in if you have an account in here. Enjoy our Website
-                </p>
-          </div>
-
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-black">Welcome Back</h1>
+              <h2 className="text-xl font-semibold text-gray-700">Sign in</h2>
+              <p className="text-gray-500 text-sm mt-1">
+                Just sign in if you have an account in here. Enjoy our Website
+              </p>
+            </div>
 
             <FloatingInput
               label="Your Email / Username"
