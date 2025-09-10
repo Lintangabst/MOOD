@@ -1,7 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import axios from "axios";
+import Cookies from "js-cookie";
+import { toast } from "sonner";
 import {
   Carousel,
   CarouselContent,
@@ -10,34 +13,92 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-interface RewardCardProps {
-  image: string;
+type Reward = {
+  _id: string;
   title: string;
-  points: number;
+  pointsRequired: number;
+  image: string;
+  stock: number;
+  active: boolean;
+};
+
+interface Props {
+  onRedeemed?: (newPoints: number) => void;
 }
 
-const RewardCard: React.FC<RewardCardProps> = ({ image, title, points }) => {
+const RewardCard: React.FC<
+  Reward & { onRedeem: (id: string) => void; loadingId: string | null }
+> = ({ _id, title, pointsRequired, image, stock, onRedeem, loadingId }) => {
+  const disabled = stock <= 0 || loadingId === _id;
   return (
-    <div className="bg-white rounded-xl border border-b-green-500 border-r-green-500 border-r-8 border-b-6 border-gray-300 text-green-500 p-6 flex flex-col items-center shadow-md">
-      <Image src={image} alt={title} width={100} height={100} />
+    <div className="bg-white border border-r-8 border-r-blue-400 border-b-4 border-b-blue-400 rounded-xl p-6 flex flex-col items-center shadow-md h-full">
+      <Image src={image || "/img/reward1.png"} alt={title} width={100} height={100} />
       <h4 className="text-lg font-bold mt-3">{title}</h4>
-      <p className="mt-2 text-blue-400 font-semibold">{points} Poin</p>
-      <button className="mt-4 bg-yellow-400 text-black font-semibold px-4 py-2 rounded hover:bg-yellow-500">
-        Tukar Sekarang
+      <p className="mt-1">{pointsRequired} Poin</p>
+      <p className="mt-1 text-sm opacity-90">Stok: {stock}</p>
+      <button
+        disabled={disabled}
+        onClick={() => onRedeem(_id)}
+        className={`mt-4 font-semibold px-4 py-2 rounded ${
+          disabled ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-yellow-400 text-black hover:bg-yellow-500"
+        }`}
+      >
+        {loadingId === _id ? "Memproses..." : "Tukar Sekarang"}
       </button>
     </div>
   );
 };
 
-const TukarPoin: React.FC = () => {
-  const rewards = [
-    { image: "/img/reward1.png", title: "Pulpen Lucu", points: 50 },
-    { image: "/img/reward2.png", title: "Buku Tulis", points: 100 },
-    { image: "/img/reward3.png", title: "Stiker Karakter", points: 30 },
-    { image: "/img/reward4.png", title: "Kotak Pensil", points: 150 },
-    { image: "/img/reward5.png", title: "Gantungan Kunci", points: 70 },
-    { image: "/img/reward6.png", title: "Tas Mini", points: 200 },
-  ];
+const TukarPoin: React.FC<Props> = ({ onRedeemed }) => {
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const fetchRewards = () => {
+    setLoading(true);
+    axios
+      .get<Reward[]>("http://localhost:5000/api/rewards")
+      .then((res) => setRewards(res.data))
+      .catch(() => toast.error("Gagal memuat rewards"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRewards();
+  }, []);
+
+ const handleRedeem = async (rewardId: string) => {
+  const token = Cookies.get("token");
+  if (!token) {
+    toast.error("Silakan login kembali");
+    return;
+  }
+  try {
+    setLoadingId(rewardId);
+    const res = await axios.post(
+      "http://localhost:5000/api/rewards/redeem",
+      { rewardId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    toast.success(res.data?.message || "Penukaran berhasil diajukan");
+    // update poin di dashboard + refresh data
+    onRedeemed?.(res.data.currentPoints);
+    fetchRewards();
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      toast.error(err.response?.data?.message || "Gagal menukar poin");
+    } else {
+      toast.error("Terjadi kesalahan tidak diketahui");
+    }
+  } finally {
+    setLoadingId(null);
+  }
+};
+
+  if (loading) {
+    return <p className="text-center mt-8 text-gray-600">Memuat hadiah…</p>;
+  }
 
   return (
     <div className="mt-10 text-center">
@@ -47,12 +108,9 @@ const TukarPoin: React.FC = () => {
       <div className="mt-6">
         <Carousel className="w-full max-w-4xl mx-auto">
           <CarouselContent>
-            {rewards.map((r, i) => (
-              <CarouselItem
-                key={i}
-                className="basis-full md:basis-1/2 lg:basis-1/3 p-2"
-              >
-                <RewardCard {...r} />
+            {rewards.map((r) => (
+              <CarouselItem key={r._id} className="basis-full md:basis-1/2 lg:basis-1/3 p-2">
+                <RewardCard {...r} onRedeem={handleRedeem} loadingId={loadingId} />
               </CarouselItem>
             ))}
           </CarouselContent>

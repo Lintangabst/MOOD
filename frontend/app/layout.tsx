@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+"use client";
+
+import { usePathname } from "next/navigation";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -11,20 +13,16 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-export const metadata: Metadata = {
-  title: "MOOD App",
-  description: "Mathematics Operation Online Development",
-};
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const showNavbar = !pathname?.startsWith("/admin"); // Navbar tidak muncul di /admin
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
-        <Navbar />
+        {showNavbar && <Navbar />}
         <main>{children}</main>
-        <Footer />
+        {showNavbar && <Footer />}
         <Toaster richColors position="top-center" />
       </body>
     </html>

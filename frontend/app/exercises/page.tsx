@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import Cookies from "js-cookie";
 
-const API_KEY = "AIzaSyBMIwApNEvPvqMSjzLnncY0CYS9i99-8oE";
+const API_KEY = "AIzaSyBMIwApNEvPvqMSjzLnncY0CYS9i99-8oE"; // jangan taruh di frontend production 🚨
 
 type Question = {
   question: string;
@@ -35,10 +37,11 @@ const ExerciseGame: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [timeLeft, setTimeLeft] = useState<number>(TIMER_LIMIT);
   const [finished, setFinished] = useState<boolean>(false);
+  const [rewardPoints, setRewardPoints] = useState<number | null>(null);
 
   const router = useRouter();
 
-  // Ambil soal baru
+  // ambil soal baru
   const generateExercise = async () => {
     if (currentQuestion > TOTAL_QUESTIONS) {
       setFinished(true);
@@ -57,14 +60,14 @@ const ExerciseGame: React.FC = () => {
       const prompt = `
         Buatkan 1 soal pilihan ganda tentang operasi bilangan (penjumlahan, pengurangan, perkalian, pembagian) untuk anak SD.
         Gunakan angka kecil (1–100).
-        Jangan Pernah Menggunakan Angka yang sama untuk Soal dan Hasil.
-        Jawaban benar HARUS sama persis dengan salah satu nilai di "options".
+        Jangan pernah menggunakan angka yang sama untuk soal dan hasil.
+        Jawaban benar HARUS sama persis dengan salah satu opsi.
         Format JSON ketat:
         {
-          "question": "Pertanyaan di sini",
+          "question": "Pertanyaan",
           "options": ["opsi A", "opsi B", "opsi C", "opsi D"],
-          "answer": "Jawaban benar (harus sama persis dengan salah satu opsi)",
-          "explanation": "Penjelasan singkat"
+          "answer": "jawaban benar",
+          "explanation": "penjelasan singkat"
         }
       `;
 
@@ -72,8 +75,6 @@ const ExerciseGame: React.FC = () => {
       const text = result.response.text();
       const jsonText = text.replace(/```json|```/g, "").trim();
       const parsed: Question = JSON.parse(jsonText);
-
-      console.log("Soal dari AI:", parsed); // debug
 
       setQuestion(parsed);
     } catch (error) {
@@ -84,12 +85,11 @@ const ExerciseGame: React.FC = () => {
     }
   };
 
-  // Cek jawaban user
+  // cek jawaban
   const checkAnswer = (option: string) => {
     if (!question) return;
 
     setSelectedAnswer(option);
-
     const correct =
       option.trim().toLowerCase() === question.answer.trim().toLowerCase();
 
@@ -98,11 +98,10 @@ const ExerciseGame: React.FC = () => {
       setFeedback(`✅ Benar! ${question.explanation}`);
     } else {
       setFeedback(
-        `❌ Salah. Jawaban yang benar: ${question.answer}. ${question.explanation}`
+        `❌ Salah. Jawaban benar: ${question.answer}. ${question.explanation}`
       );
     }
 
-    // simpan ke history
     setHistory((prev) => [
       ...prev,
       {
@@ -116,12 +115,11 @@ const ExerciseGame: React.FC = () => {
     ]);
   };
 
-  // Auto next kalau waktu habis
+  // auto next kalau waktu habis
   useEffect(() => {
     if (finished || !question) return;
 
     if (timeLeft <= 0) {
-      // simpan history dengan jawaban kosong
       setHistory((prev) => [
         ...prev,
         {
@@ -143,27 +141,52 @@ const ExerciseGame: React.FC = () => {
     return () => clearTimeout(timer);
   }, [timeLeft, question, finished]);
 
-  // Pertama kali jalan → ambil soal
+  // pertama kali jalan
   useEffect(() => {
     generateExercise();
   }, []);
 
-  // Next soal manual
+  // selesai → kasih poin kalau skor >= 7
+  useEffect(() => {
+    if (finished && score >= 2) {
+      const randomPoints = Math.floor(Math.random() * (100 - 10 + 1)) + 10;
+      setRewardPoints(randomPoints);
+
+      const token = Cookies.get("token");
+      if (token) {
+        axios
+          .post(
+            "http://localhost:5000/api/auth/points",
+            { amount: randomPoints },
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+          .then((res) => {
+            console.log("Poin berhasil ditambahkan:", res.data);
+          })
+          .catch((err) => {
+            console.error("Gagal update poin:", err);
+          });
+      }
+    }
+  }, [finished, score]);
+
+  // next soal
   const nextQuestion = () => {
     setCurrentQuestion((prev) => prev + 1);
     generateExercise();
   };
 
-  // Reset game
+  // reset game
   const playAgain = () => {
     setCurrentQuestion(1);
     setScore(0);
     setHistory([]);
     setFinished(false);
+    setRewardPoints(null);
     generateExercise();
   };
 
-  // Selesai
+  // UI selesai
   if (finished || currentQuestion > TOTAL_QUESTIONS) {
     return (
       <div className="flex flex-col min-h-screen items-center justify-center bg-green-50 p-6">
@@ -172,6 +195,12 @@ const ExerciseGame: React.FC = () => {
           Skor akhir kamu: <span className="font-bold">{score}</span> /{" "}
           {TOTAL_QUESTIONS}
         </p>
+
+        {rewardPoints && (
+          <p className="text-lg font-semibold text-green-700 mb-4">
+            🎁 Selamat! Kamu mendapatkan {rewardPoints} poin 🎉
+          </p>
+        )}
 
         <div className="w-full max-w-2xl bg-white rounded-xl shadow p-4 space-y-4 mb-6">
           <h2 className="text-lg font-semibold">📚 Review Soal</h2>
@@ -205,19 +234,20 @@ const ExerciseGame: React.FC = () => {
             onClick={playAgain}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
           >
-            🔄 Play Again
+            🔄 Main Lagi
           </button>
           <button
             onClick={() => router.push("/")}
             className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
           >
-            ⬅️ Back to Homepage
+            ⬅️ Kembali
           </button>
         </div>
       </div>
     );
   }
 
+  // UI soal
   return (
     <div className="flex flex-col min-h-screen items-center justify-center bg-gray-100 p-6">
       <h1 className="text-3xl font-bold mb-6">🎯 MOODBOT - Exercise Game</h1>

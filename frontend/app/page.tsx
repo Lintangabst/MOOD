@@ -4,14 +4,24 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import MainFeatures from "@/components/MainFeatures";
 import TestimonialSection from "@/components/TestimonialSection";
+import { motion } from "framer-motion";
 
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
 
 export default function HomePage() {
   return (
     <div className="bg-white text-gray-800">
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-        <div>
+      <motion.section
+        className="container mx-auto px-4 py-20 grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
+        initial="hidden"
+        animate="visible"
+        variants={fadeInUp}
+      >
+        <motion.div variants={fadeInUp}>
           <h1 className="text-4xl md:text-5xl font-bold text-green-600 leading-tight mb-4">
             Welcome to Mathematics Operation Online Development (MOOD)
           </h1>
@@ -24,9 +34,9 @@ export default function HomePage() {
           <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 text-sm md:text-base">
             Start Learning
           </Button>
-        </div>
+        </motion.div>
 
-        <div className="flex justify-center">
+        <motion.div className="flex justify-center" variants={fadeInUp}>
           <Image
             src="/img/hero.png"
             alt="Hero Illustration"
@@ -35,79 +45,90 @@ export default function HomePage() {
             className="object-contain max-w-full h-auto"
             priority
           />
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
-      <section className="container mx-auto px-4 py-16">
+      {/* About Section */}
+      <motion.section
+        className="container mx-auto px-4 py-16"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={fadeInUp}
+      >
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="flex justify-center">
+          <motion.div className="flex justify-center" variants={fadeInUp}>
             <Image
-              src="/img/about.png" 
+              src="/img/about.png"
               alt="Eco Globe"
               width={500}
               height={500}
               className="object-contain"
             />
-          </div>
+          </motion.div>
 
-          <div>
+          <motion.div variants={fadeInUp}>
             <h2 className="text-2xl md:text-3xl font-bold text-green-600 mb-6">
               Eco-Friendly Education Through <br className="hidden md:block" /> Mathematical Operations
             </h2>
 
-          <div className="space-y-4">
-            {[
-              {
-                title: "Eco-Friendly Friendly Math",
-                desc: "Explore math operations while understanding eco-",
-                desc2: "friendly concept through plants.",
-                image: "/img/leaves.png",
-              },
-              {
-                title: "Sustainable Practices",
-                desc: "Understand mathematics can help in promoting",
-                desc2: "sustainable and eco friendly practices.",
-                image: "/img/sus.png",
-              },
-              {
-                title: "Mathematical Greenhouse",
-                desc: "Apply mathematical concepts to the growth of the",
-                desc2: "plants, understanding how operations affect nature.",
-                image: "/img/math.png",
-              },
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className="bg-white p-4 rounded-xl shadow hover:shadow-md transition border flex items-start gap-4"
-              >
-                {/* Left image */}
-                <div className="w-6 h-6 flex-shrink-0">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+            <div className="space-y-4">
+              {[
+                {
+                  title: "Eco-Friendly Friendly Math",
+                  desc: "Explore math operations while understanding eco-",
+                  desc2: "friendly concept through plants.",
+                  image: "/img/leaves.png",
+                },
+                {
+                  title: "Sustainable Practices",
+                  desc: "Understand mathematics can help in promoting",
+                  desc2: "sustainable and eco friendly practices.",
+                  image: "/img/sus.png",
+                },
+                {
+                  title: "Mathematical Greenhouse",
+                  desc: "Apply mathematical concepts to the growth of the",
+                  desc2: "plants, understanding how operations affect nature.",
+                  image: "/img/math.png",
+                },
+              ].map((item, idx) => (
+                <motion.div
+                  key={idx}
+                  className="bg-white p-4 rounded-xl shadow hover:shadow-md transition border flex items-start gap-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ delay: idx * 0.15 }}
+                >
+                  {/* Left image */}
+                  <div className="w-6 h-6 flex-shrink-0">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
 
-                {/* Right content */}
-                <div>
-                  <h3 className="text-green-600 font-semibold text-base">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">{item.desc} <br/> {item.desc2} </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          </div>
+                  {/* Right content */}
+                  <div>
+                    <h3 className="text-green-600 font-semibold text-base">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">{item.desc} <br/> {item.desc2}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      <MainFeatures />
-
-      <TestimonialSection />
-
+      {/* Features and Testimonials */}
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }}>
+        <MainFeatures />
+        <TestimonialSection />
+      </motion.div>
     </div>
   );
 }

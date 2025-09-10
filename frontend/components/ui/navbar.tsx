@@ -104,11 +104,14 @@ export default function Navbar() {
             >
               Start Exercises
             </Link>
+                       <Link
+              href="/custom"
+              className={`text-white bg-blue-400 p-3 rounded-md`}
+            >
+              Create Your Own Exercise!
+            </Link>
           </nav>
 
-          <Button className="bg-green-500 hover:bg-green-600 text-white text-sm">
-            Exercises with AI
-          </Button>
 
           {isLoggedIn && (
             <div className="flex items-center gap-3">
